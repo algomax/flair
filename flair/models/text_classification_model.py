@@ -6,6 +6,8 @@ from typing import List, Union
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+
 
 import flair.nn
 import flair.embeddings
@@ -19,6 +21,28 @@ from flair.training_utils import (
 )
 
 log = logging.getLogger("flair")
+
+class FocalLoss(nn.Module):
+    def __init__(self, alpha=1, gamma=2, logits=False, reduce=True):
+        super(FocalLoss, self).__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.logits = logits
+        self.reduce = reduce
+
+    def forward(self, inputs, targets):
+        if self.logits:
+            BCE_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduce=False)
+        else:
+            BCE_loss = F.binary_cross_entropy(inputs, targets, reduce=False)
+        pt = torch.exp(-BCE_loss)
+        F_loss = self.alpha * (1-pt)**self.gamma * BCE_loss
+
+        if self.reduce:
+            return torch.mean(F_loss)
+        else:
+            return F_loss
+
 
 
 class TextClassifier(flair.nn.Model):
@@ -56,7 +80,8 @@ class TextClassifier(flair.nn.Model):
         self._init_weights()
 
         if self.multi_label:
-            self.loss_function = nn.BCEWithLogitsLoss()
+            # self.loss_function = nn.BCEWithLogitsLoss()
+            self.loss_function = FocalLoss()
         else:
             self.loss_function = nn.CrossEntropyLoss()
 
