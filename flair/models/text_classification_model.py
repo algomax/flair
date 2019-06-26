@@ -31,10 +31,7 @@ class FocalLoss(nn.Module):
         self.reduce = reduce
 
     def forward(self, inputs, targets):
-        if self.logits:
-            BCE_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduce=False)
-        else:
-            BCE_loss = F.binary_cross_entropy(inputs, targets, reduce=False)
+        BCE_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduce=False)
         pt = torch.exp(-BCE_loss)
         F_loss = self.alpha * (1-pt)**self.gamma * BCE_loss
 
@@ -42,7 +39,6 @@ class FocalLoss(nn.Module):
             return torch.mean(F_loss)
         else:
             return F_loss
-
 
 
 class TextClassifier(flair.nn.Model):
